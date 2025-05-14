@@ -1,0 +1,191 @@
+### Globális változók
+@host = http://localhost:3000
+@testUsername = filmtesztelo
+@testPassword = TesztJelszo123
+
+### Token (bejelentkezés után lesz beállítva)
+@authToken = {{loginTestUser.response.body.token}}
+
+### Létrehozott film ID-ja (létrehozás után lesz beállítva)
+@createdMovieId = {{addMovieSuccess.response.body.id}}
+
+### -------------------------------------
+### FELHASZNÁLÓI MŰVELETEK (Előfeltétel)
+### -------------------------------------
+
+### 1. Új felhasználó regisztrálása a tesztekhez
+# @name registerTestUser
+POST {{host}}/api/users/register
+Content-Type: application/json
+
+{
+    "username": "{{testUsername}}",
+    "password": "{{testPassword}}"
+}
+
+### 2. Bejelentkezés a teszt felhasználóval és token mentése
+# @name loginTestUser
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "username": "{{testUsername}}",
+    "password": "{{testPassword}}"
+}
+
+
+### -------------------------------------
+### FILM MŰVELETEK
+### -------------------------------------
+
+### 3. Új film hozzáadása (sikeres)
+# @name addMovieSuccess
+POST {{host}}/api/movies
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "cim": "Teszt Film Címe",
+    "ev": 2023,
+    "rendezo": "Teszt Rendező",
+    "ertekeles": 4,
+    "velemeny": "Ez egy jó teszt film.",
+    "megnezve": "2023-10-26",
+    "hol": "Mozi"
+}
+
+### 4. Új film hozzáadása (hiba: hiányzó cím)
+# @name addMovieMissingTitle
+POST {{host}}/api/movies
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "ev": 2023
+}
+
+### 5. Új film hozzáadása (hiba: érvénytelen értékelés)
+# @name addMovieInvalidRating
+POST {{host}}/api/movies
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "cim": "Film Rossz Értékeléssel",
+    "ertekeles": 7
+}
+
+### 6. Új film hozzáadása (hiba: érvénytelen év)
+# @name addMovieInvalidYear
+POST {{host}}/api/movies
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "cim": "Film Rossz Évvel",
+    "ev": 1700
+}
+
+### 7. Új film hozzáadása (hiba: érvénytelen dátum)
+# @name addMovieInvalidDate
+POST {{host}}/api/movies
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "cim": "Film Rossz Dátummal",
+    "megnezve": "2023-13-01"
+}
+
+### 8. Új film hozzáadása (hiba: authentikáció nélkül)
+# @name addMovieNoAuth
+POST {{host}}/api/movies
+Content-Type: application/json
+
+{
+    "cim": "Auth Nélküli Film"
+}
+
+### 9. Felhasználó filmjeinek listázása (sikeres)
+# @name listMoviesSuccess
+GET {{host}}/api/movies
+Authorization: Bearer {{authToken}}
+
+### 10. Felhasználó filmjeinek listázása (hiba: authentikáció nélkül)
+# @name listMoviesNoAuth
+GET {{host}}/api/movies
+
+### 11. Egy konkrét film lekérése (sikeres)
+# @name getMovieByIdSuccess
+GET {{host}}/api/movies/{{createdMovieId}}
+Authorization: Bearer {{authToken}}
+
+### 12. Egy konkrét film lekérése (hiba: nem létező ID)
+# @name getMovieByIdNotFound
+GET {{host}}/api/movies/999999
+Authorization: Bearer {{authToken}}
+
+### 13. Egy konkrét film lekérése (hiba: érvénytelen ID formátum)
+# @name getMovieByIdInvalidFormat
+GET {{host}}/api/movies/abc
+Authorization: Bearer {{authToken}}
+
+### 14. Egy konkrét film lekérése (hiba: authentikáció nélkül)
+# @name getMovieByIdNoAuth
+GET {{host}}/api/movies/{{createdMovieId}}
+
+### 15. Film adatainak módosítása (sikeres)
+# @name updateMovieSuccess
+PUT {{host}}/api/movies/{{createdMovieId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "cim": "Frissített Teszt Film Címe",
+    "ertekeles": 5,
+    "velemeny": "Ez egy frissített vélemény."
+}
+
+### 16. Film adatainak módosítása (hiba: érvénytelen értékelés)
+# @name updateMovieInvalidRating
+PUT {{host}}/api/movies/{{createdMovieId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "ertekeles": 0
+}
+
+### 17. Film adatainak módosítása (hiba: nem létező ID)
+# @name updateMovieNotFound
+PUT {{host}}/api/movies/999999
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "cim": "Nem Létező Film Frissítése"
+}
+
+### 18. Film adatainak módosítása (hiba: authentikáció nélkül)
+# @name updateMovieNoAuth
+PUT {{host}}/api/movies/{{createdMovieId}}
+Content-Type: application/json
+
+{
+    "cim": "Auth Nélküli Frissítés"
+}
+
+### 19. Film törlése (sikeres)
+# @name deleteMovieSuccess
+DELETE {{host}}/api/movies/{{createdMovieId}}
+Authorization: Bearer {{authToken}}
+
+### 20. Film törlése (hiba: nem létező ID, mert már töröltük)
+# @name deleteMovieNotFound
+DELETE {{host}}/api/movies/{{createdMovieId}}
+Authorization: Bearer {{authToken}}
+
+### 21. Film törlése (hiba: authentikáció nélkül)
+# @name deleteMovieNoAuth
+DELETE {{host}}/api/movies/{{createdMovieId}}
+Authorization: Bearer {{authToken}}

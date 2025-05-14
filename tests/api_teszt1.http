@@ -1,0 +1,119 @@
+# Állítsd be a szerver címét és portját
+@host = http://localhost:3000
+
+# ----------------------------------------------------
+# Regisztrációs tesztek
+# ----------------------------------------------------
+
+###
+# 1. Új felhasználó regisztrációja
+# Sikeres válasz: 201 Created
+POST {{host}}/api/users/register
+Content-Type: application/json
+
+{
+    "username": "testuser_reg",
+    "password": "password123"
+}
+
+###
+# 2. Regisztráció - Hiányzó felhasználónév
+# Várt válasz: 400 Bad Request
+POST {{host}}/api/users/register
+Content-Type: application/json
+
+{
+    "password": "password123"
+}
+
+###
+# 3. Regisztráció - Hiányzó jelszó
+# Várt válasz: 400 Bad Request
+POST {{host}}/api/users/register
+Content-Type: application/json
+
+{
+    "username": "testuser_nopass"
+}
+
+###
+# 4. Regisztráció - Túl rövid jelszó
+# Várt válasz: 400 Bad Request
+POST {{host}}/api/users/register
+Content-Type: application/json
+
+{
+    "username": "testuser_shortpass",
+    "password": "123"
+}
+
+###
+# 5. Regisztráció - Már létező felhasználónév
+# Először futtasd az 1. tesztet, hogy a "testuser_reg" felhasználó létrejöjjön.
+# Várt válasz: 409 Conflict
+POST {{host}}/api/users/register
+Content-Type: application/json
+
+{
+    "username": "testuser_reg",
+    "password": "anotherpassword"
+}
+
+# ----------------------------------------------------
+# Bejelentkezési tesztek
+# ----------------------------------------------------
+
+###
+# 6. Sikeres bejelentkezés
+# Használd az 1. tesztben regisztrált felhasználót.
+# Sikeres válasz: 200 OK, és egy JWT tokent kell tartalmaznia.
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "username": "testuser_reg",
+    "password": "password123"
+}
+
+###
+# 7. Bejelentkezés - Hibás jelszó
+# Várt válasz: 401 Unauthorized
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "username": "testuser_reg",
+    "password": "wrongpassword"
+}
+
+###
+# 8. Bejelentkezés - Nem létező felhasználó
+# Várt válasz: 401 Unauthorized
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "username": "nonexistentuser",
+    "password": "password123"
+}
+
+###
+# 9. Bejelentkezés - Hiányzó felhasználónév
+# Várt válasz: 400 Bad Request
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "password": "password123"
+}
+
+###
+# 10. Bejelentkezés - Hiányzó jelszó
+# Várt válasz: 400 Bad Request
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "username": "testuser_reg"
+}
+
