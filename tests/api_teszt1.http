@@ -66,7 +66,7 @@ Content-Type: application/json
 ###
 # 6. Sikeres bejelentkezés
 # Használd az 1. tesztben regisztrált felhasználót.
-# Sikeres válasz: 200 OK, és egy JWT tokent kell tartalmaznia.
+# Sikeres válasz: 200 OK, a JWT token HTTP-Only cookie-ban érkezik.
 POST {{host}}/api/users/login
 Content-Type: application/json
 
@@ -117,3 +117,24 @@ Content-Type: application/json
     "username": "testuser_reg"
 }
 
+# ----------------------------------------------------
+# Kijelentkezési tesztek
+# ----------------------------------------------------
+
+###
+# 11. Sikeres kijelentkezés
+# Először bejelentkezünk, hogy legyen aktív session (cookie).
+# Majd kijelentkezünk.
+# Várt válasz a kijelentkezésre: 200 OK.
+
+# @name loginForLogoutTest
+POST {{host}}/api/users/login
+Content-Type: application/json
+
+{
+    "username": "testuser_reg",
+    "password": "password123"
+}
+
+### Kijelentkezés
+POST {{host}}/api/users/logout

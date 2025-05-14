@@ -4,6 +4,7 @@ const cors = require('cors');
 const DB = require('better-sqlite3');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const app = express();
@@ -53,11 +54,13 @@ function findUserByUsername(username) {
 // --- Middleware-ek ---
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // Autentikációs Middleware
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Formátum: Bearer TOKEN
+    // const authHeader = req.headers.authorization;
+    // const token = authHeader && authHeader.split(' ')[1]; // Formátum: Bearer TOKEN
+    const token = req.cookies.authToken; // Token olvasása a cookie-ból
     if (token == null) {
         return res.status(401).json({ message: 'Hiányzó autentikációs token.' });
     }
@@ -118,9 +121,18 @@ app.post('/api/users/login', async (req, res) => {
             JWT_SECRET,
             { expiresIn: '3h' } // Token lejárati ideje
         );
+
+        res.cookie('authToken', token, {
+            httpOnly: true, // JavaScript nem férhet hozzá
+            secure: process.env.NODE_ENV === 'production', // Csak HTTPS-en éles környezetben
+            sameSite: 'Lax', // CSRF védelem ('Strict' még erősebb)
+            maxAge: 3 * 60 * 60 * 1000 // 3 óra milliszekundumban, összhangban a token lejáratával
+        });
+
         res.status(200).json({
             message: 'Sikeres bejelentkezés.',
-            token: token,
+            // A tokent már nem küldjük a JSON body-ban, ha sütit használunk
+            // token: token, 
             user: {
                 id: user.id,
                 username: user.username
@@ -131,6 +143,18 @@ app.post('/api/users/login', async (req, res) => {
         res.status(500).json({ message: 'Szerverhiba a bejelentkezés során.' });
     }
 });
+
+// POST /api/users/logout: Kijelentkezés
+app.post('/api/users/logout', (req, res) => {
+    res.cookie('authToken', '', { // Cookie törlése üres értékkel és azonnali lejárattal
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        expires: new Date(0) // Vagy maxAge: 0
+    });
+    res.status(200).json({ message: 'Sikeres kijelentkezés.' });
+});
+
 
 // --- Filmekkel kapcsolatos Útvonalak ---
 

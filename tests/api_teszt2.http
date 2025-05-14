@@ -3,9 +3,6 @@
 @testUsername = filmtesztelo
 @testPassword = TesztJelszo123
 
-### Token (bejelentkezés után lesz beállítva)
-@authToken = {{loginTestUser.response.body.token}}
-
 ### Létrehozott film ID-ja (létrehozás után lesz beállítva)
 @createdMovieId = {{addMovieSuccess.response.body.id}}
 
@@ -42,7 +39,6 @@ Content-Type: application/json
 # @name addMovieSuccess
 POST {{host}}/api/movies
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "cim": "Teszt Film Címe",
@@ -58,7 +54,6 @@ Authorization: Bearer {{authToken}}
 # @name addMovieMissingTitle
 POST {{host}}/api/movies
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "ev": 2023
@@ -68,7 +63,6 @@ Authorization: Bearer {{authToken}}
 # @name addMovieInvalidRating
 POST {{host}}/api/movies
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "cim": "Film Rossz Értékeléssel",
@@ -79,7 +73,6 @@ Authorization: Bearer {{authToken}}
 # @name addMovieInvalidYear
 POST {{host}}/api/movies
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "cim": "Film Rossz Évvel",
@@ -90,55 +83,32 @@ Authorization: Bearer {{authToken}}
 # @name addMovieInvalidDate
 POST {{host}}/api/movies
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "cim": "Film Rossz Dátummal",
     "megnezve": "2023-13-01"
 }
 
-### 8. Új film hozzáadása (hiba: authentikáció nélkül)
-# @name addMovieNoAuth
-POST {{host}}/api/movies
-Content-Type: application/json
-
-{
-    "cim": "Auth Nélküli Film"
-}
-
-### 9. Felhasználó filmjeinek listázása (sikeres)
+### 8. Felhasználó filmjeinek listázása (sikeres)
 # @name listMoviesSuccess
 GET {{host}}/api/movies
-Authorization: Bearer {{authToken}}
 
-### 10. Felhasználó filmjeinek listázása (hiba: authentikáció nélkül)
-# @name listMoviesNoAuth
-GET {{host}}/api/movies
-
-### 11. Egy konkrét film lekérése (sikeres)
+### 9. Egy konkrét film lekérése (sikeres)
 # @name getMovieByIdSuccess
 GET {{host}}/api/movies/{{createdMovieId}}
-Authorization: Bearer {{authToken}}
 
-### 12. Egy konkrét film lekérése (hiba: nem létező ID)
+### 10. Egy konkrét film lekérése (hiba: nem létező ID)
 # @name getMovieByIdNotFound
 GET {{host}}/api/movies/999999
-Authorization: Bearer {{authToken}}
 
-### 13. Egy konkrét film lekérése (hiba: érvénytelen ID formátum)
+### 11. Egy konkrét film lekérése (hiba: érvénytelen ID formátum)
 # @name getMovieByIdInvalidFormat
 GET {{host}}/api/movies/abc
-Authorization: Bearer {{authToken}}
 
-### 14. Egy konkrét film lekérése (hiba: authentikáció nélkül)
-# @name getMovieByIdNoAuth
-GET {{host}}/api/movies/{{createdMovieId}}
-
-### 15. Film adatainak módosítása (sikeres)
+### 12. Film adatainak módosítása (sikeres)
 # @name updateMovieSuccess
 PUT {{host}}/api/movies/{{createdMovieId}}
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "cim": "Frissített Teszt Film Címe",
@@ -146,46 +116,34 @@ Authorization: Bearer {{authToken}}
     "velemeny": "Ez egy frissített vélemény."
 }
 
-### 16. Film adatainak módosítása (hiba: érvénytelen értékelés)
+### 13. Film adatainak módosítása (hiba: érvénytelen értékelés)
 # @name updateMovieInvalidRating
 PUT {{host}}/api/movies/{{createdMovieId}}
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "ertekeles": 0
 }
 
-### 17. Film adatainak módosítása (hiba: nem létező ID)
+### 14. Film adatainak módosítása (hiba: nem létező ID)
 # @name updateMovieNotFound
 PUT {{host}}/api/movies/999999
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
     "cim": "Nem Létező Film Frissítése"
 }
 
-### 18. Film adatainak módosítása (hiba: authentikáció nélkül)
-# @name updateMovieNoAuth
-PUT {{host}}/api/movies/{{createdMovieId}}
-Content-Type: application/json
-
-{
-    "cim": "Auth Nélküli Frissítés"
-}
-
-### 19. Film törlése (sikeres)
+### 15. Film törlése (sikeres)
 # @name deleteMovieSuccess
 DELETE {{host}}/api/movies/{{createdMovieId}}
-Authorization: Bearer {{authToken}}
 
-### 20. Film törlése (hiba: nem létező ID, mert már töröltük)
+### 16. Film törlése (hiba: nem létező ID, mert már töröltük)
 # @name deleteMovieNotFound
 DELETE {{host}}/api/movies/{{createdMovieId}}
-Authorization: Bearer {{authToken}}
 
-### 21. Film törlése (hiba: authentikáció nélkül)
-# @name deleteMovieNoAuth
-DELETE {{host}}/api/movies/{{createdMovieId}}
-Authorization: Bearer {{authToken}}
+### 17. Kijelentkezés (sikeres)
+# @name logoutSuccess
+# Ez a kérés törli a HTTP-Only cookie-t a szerver oldalon.
+# A kliens (pl. VS Code REST Client) ezután már nem küldi el a cookie-t.
+POST {{host}}/api/users/logout
