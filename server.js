@@ -39,8 +39,6 @@ db.exec(`
         velemeny TEXT,
         megnezve DATE, -- Ha NULL, akkor még nem néztük meg
         hol TEXT,
-        letrehozva DATETIME DEFAULT CURRENT_TIMESTAMP,
-        modositva DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES felhasznalok(id) ON DELETE CASCADE
     )
 `);
@@ -187,8 +185,8 @@ app.post('/api/movies', authenticateToken, (req, res) => {
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO filmek (user_id, cim, ev, rendezo, ertekeles, velemeny, megnezve, hol, modositva)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+            INSERT INTO filmek (user_id, cim, ev, rendezo, ertekeles, velemeny, megnezve, hol)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const result = stmt.run(
             userId,
@@ -216,7 +214,7 @@ app.post('/api/movies', authenticateToken, (req, res) => {
 app.get('/api/movies', authenticateToken, (req, res) => {
     const userId = req.user.userId;
     let query = 'SELECT * FROM filmek WHERE user_id = ?';
-    query += ' ORDER BY datetime(letrehozva) DESC'; // Biztosítjuk, hogy dátumként értelmezze
+    query += ' ORDER BY date(megnezve) DESC'; // Biztosítjuk, hogy dátumként értelmezze
 
     try {
         const stmt = db.prepare(query);
@@ -285,8 +283,6 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
             return res.status(200).json(currentMovie); // Nincs mit frissíteni
         }
 
-        fieldsToUpdate.modositva = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
         const setClauses = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
         const values = [...Object.values(fieldsToUpdate), movieId, userId];
 
@@ -324,7 +320,6 @@ app.delete('/api/movies/:id', authenticateToken, (req, res) => {
         res.status(500).json({ message: 'Szerverhiba történt a film törlésekor.' });
     }
 });
-
 
 // --- Alapvető hibakezelő ---
 app.use((err, req, res, next) => {
