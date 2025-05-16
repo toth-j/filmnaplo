@@ -153,6 +153,48 @@ app.post('/api/users/logout', (req, res) => {
     res.status(200).json({ message: 'Sikeres kijelentkezés.' });
 });
 
+// --- Segédfüggvény filmadatok validálásához ---
+function validateMovieData(data, isNewMovie = false) {
+    const { cim, ev, ertekeles, megnezve } = data;
+
+    // Cim validáció (csak új filmeknél kötelező)
+    if (isNewMovie && !cim) { // Ellenőrzi undefined, null, üres string stb.
+        return { status: 400, message: 'A film címe kötelező.' };
+    }
+
+    // Ertekeles validáció
+    // Ha az ertekeles meg van adva (nem undefined, nem null), akkor 1 és 5 közötti számnak kell lennie.
+    if (ertekeles !== undefined && ertekeles !== null) {
+        if (typeof ertekeles !== 'number' || ertekeles < 1 || ertekeles > 5) {
+            return { status: 400, message: 'Az értékelésnek 1 és 5 közötti számnak kell lennie.' };
+        }
+    }
+
+    // Ev validáció
+    // Ha az ev meg van adva (nem undefined, nem null), akkor érvényes számnak kell lennie a tartományban.
+    if (ev !== undefined && ev !== null) {
+        if (typeof ev !== 'number' || ev < 1900 || ev > new Date().getFullYear() + 10) {
+            return { status: 400, message: 'Érvénytelen megjelenési év.' };
+        }
+    }
+
+    // Megnezve validáció
+    // Ha a megnezve meg van adva (nem undefined, nem null, nem üres string), akkor érvényes YYYY-MM-DD dátumnak kell lennie.
+    if (megnezve !== undefined && megnezve !== null && megnezve !== '') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(megnezve)) {
+            return { status: 400, message: 'A megnézés dátuma érvénytelen formátumú (YYYY-MM-DD).' };
+        }
+        try {
+            const d = new Date(megnezve);
+            if (isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== megnezve) {
+                throw new Error('Invalid date value');
+            }
+        } catch (e) {
+            return { status: 400, message: 'A megnézés dátuma érvénytelen (pl. február 30).' };
+        }
+    }
+    return null; // Minden validáció sikeres
+}
 
 // --- Filmekkel kapcsolatos Útvonalak ---
 
@@ -161,26 +203,10 @@ app.post('/api/movies', authenticateToken, (req, res) => {
     const { cim, ev, rendezo, ertekeles, velemeny, megnezve, hol } = req.body;
     const userId = req.user.userId; // A tokenből kinyert felhasználói azonosító
 
-    // Validációk
-    if (!cim) {
-        return res.status(400).json({ message: 'A film címe kötelező.' });
-    }
-    if (ertekeles !== undefined && ertekeles !== null && (typeof ertekeles !== 'number' || ertekeles < 1 || ertekeles > 5)) {
-        return res.status(400).json({ message: 'Az értékelésnek 1 és 5 közötti számnak kell lennie.' });
-    }
-    if (ev !== undefined && ev !== null && (typeof ev !== 'number' || ev < 1800 || ev > new Date().getFullYear() + 10)) {
-        return res.status(400).json({ message: 'Érvénytelen megjelenési év.' });
-    }
-    if (megnezve !== undefined && megnezve !== null && megnezve !== '') { // YYYY-MM-DD formátum ellenőrzése
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(megnezve)) {
-            return res.status(400).json({ message: 'A megnézés dátuma érvénytelen formátumú (YYYY-MM-DD).'});
-        }
-        try {
-            const d = new Date(megnezve);
-            if (d.toISOString().slice(0,10) !== megnezve) throw new Error('Invalid date');
-        } catch (e) {
-            return res.status(400).json({ message: 'A megnézés dátuma érvénytelen (pl. február 30).'});
-        }
+    // Adatok validálása a segédfüggvénnyel
+    const validationError = validateMovieData(req.body, true); // true, mert új filmről van szó
+    if (validationError) {
+        return res.status(validationError.status).json({ message: validationError.message });
     }
 
     try {
@@ -255,12 +281,11 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
         return res.status(400).json({ message: 'Érvénytelen film azonosító.' });
     }
     const { cim, ev, rendezo, ertekeles, velemeny, megnezve, hol } = req.body;
-    // Validációk
-    if (ertekeles !== undefined && ertekeles !== null && (typeof ertekeles !== 'number' || ertekeles < 1 || ertekeles > 5)) {
-        return res.status(400).json({ message: 'Az értékelésnek 1 és 5 közötti számnak kell lennie, vagy null.' });
-    }
-    if (ev !== undefined && ev !== null && (typeof ev !== 'number' || ev < 1800 || ev > new Date().getFullYear() + 10)) {
-        return res.status(400).json({ message: 'Érvénytelen megjelenési év.' });
+
+    // Adatok validálása a segédfüggvénnyel
+    const validationError = validateMovieData(req.body, false); // false, mert meglévő filmet módosítunk
+    if (validationError) {
+        return res.status(validationError.status).json({ message: validationError.message });
     }
 
     try {
@@ -310,7 +335,6 @@ app.delete('/api/movies/:id', authenticateToken, (req, res) => {
     try {
         const stmt = db.prepare('DELETE FROM filmek WHERE id = ? AND user_id = ?');
         const result = stmt.run(movieId, userId);
-
         if (result.changes === 0) {
             return res.status(404).json({ message: 'A film nem található vagy nincs jogosultságod törölni.' });
         }
