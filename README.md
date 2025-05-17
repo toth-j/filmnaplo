@@ -12,7 +12,7 @@
    * **Felhasználó filmbejegyzései:** Minden bejegyzés egy adott felhasználóhoz kötődik, és a következő adatokat tartalmazza:
      * Film címe (kötelező).
      * Megjelenési éve (opcionális, szám).
-     * Rendező(k) (opcionális, szöveg).
+     * Szereplő(k) (opcionális, szöveg).
      * Személyes értékelés (1-5 skálán, opcionális, szám).
      * Rövid személyes jegyzet/vélemény (opcionális, hosszabb szöveg).
      * Megnézés módosítás dátuma (Ha NULL, akkor még nem néztük meg).

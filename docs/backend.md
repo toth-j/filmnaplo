@@ -46,7 +46,7 @@ Mindegyik alábbi végpont előtt lefut az `authenticateToken` middleware, ami
 1. **`POST /api/movies`**:
    
    * **Cél**: Új filmbejegyzés hozzáadása az adatbázishoz.
-   * **Működés**: A kérés törzsében (`req.body`) várja a film adatait (cím, év, rendező, értékelés stb.). A bejelentkezett felhasználó azonosítóját (`req.user.userId`) felhasználva menti el az új filmet az `movies` (a kódban `filmek`) táblába.
+   * **Működés**: A kérés törzsében (`req.body`) várja a film adatait (cím, év, szereplők, értékelés stb.). A bejelentkezett felhasználó azonosítóját (`req.user.userId`) felhasználva menti el az új filmet az `movies` (a kódban `filmek`) táblába.
    * **Válasz**: Sikeres létrehozás esetén `201` státuszkóddal és az újonnan létrehozott film adataival tér vissza. Hiba esetén megfelelő státuszkódot és hibaüzenetet küld.
 
 2. **`GET /api/movies`**:

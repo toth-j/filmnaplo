@@ -43,7 +43,7 @@ Content-Type: application/json
 {
     "cim": "Teszt Film Címe",
     "ev": 2023,
-    "rendezo": "Teszt Rendező",
+    "szereplo": "Teszt Szereplő",
     "ertekeles": 4,
     "velemeny": "Ez egy jó teszt film.",
     "megnezve": "2023-10-26",

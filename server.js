@@ -34,7 +34,7 @@ db.exec(`
         user_id INTEGER NOT NULL,
         cim TEXT NOT NULL,
         ev INTEGER,
-        rendezo TEXT,
+        szereplok TEXT,
         ertekeles INTEGER CHECK(ertekeles IS NULL OR (ertekeles >= 1 AND ertekeles <= 5)),
         velemeny TEXT,
         megnezve DATE, -- Ha NULL, akkor még nem néztük meg
@@ -200,7 +200,7 @@ function validateMovieData(data, isNewMovie = false) {
 
 // POST /api/movies: Új film hozzáadása
 app.post('/api/movies', authenticateToken, (req, res) => {
-    const { cim, ev, rendezo, ertekeles, velemeny, megnezve, hol } = req.body;
+    const { cim, ev, szereplok, ertekeles, velemeny, megnezve, hol } = req.body;
     const userId = req.user.userId; // A tokenből kinyert felhasználói azonosító
 
     // Adatok validálása a segédfüggvénnyel
@@ -211,14 +211,14 @@ app.post('/api/movies', authenticateToken, (req, res) => {
 
     try {
         const stmt = db.prepare(`
-            INSERT INTO filmek (user_id, cim, ev, rendezo, ertekeles, velemeny, megnezve, hol)
+            INSERT INTO filmek (user_id, cim, ev, szereplok, ertekeles, velemeny, megnezve, hol)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
         const result = stmt.run(
             userId,
             cim,
             ev || null,
-            rendezo || null,
+            szereplok || null,
             ertekeles || null,
             velemeny || null,
             (megnezve === '' || megnezve === undefined) ? null : megnezve,
@@ -280,7 +280,7 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
     if (isNaN(movieId)) {
         return res.status(400).json({ message: 'Érvénytelen film azonosító.' });
     }
-    const { cim, ev, rendezo, ertekeles, velemeny, megnezve, hol } = req.body;
+    const { cim, ev, szereplok, ertekeles, velemeny, megnezve, hol } = req.body;
 
     // Adatok validálása a segédfüggvénnyel
     const validationError = validateMovieData(req.body, false); // false, mert meglévő filmet módosítunk
@@ -297,7 +297,7 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
         const fieldsToUpdate = {};
         if (cim !== undefined) fieldsToUpdate.cim = cim;
         if (ev !== undefined) fieldsToUpdate.ev = (ev === '' || ev === null) ? null : Number(ev);
-        if (rendezo !== undefined) fieldsToUpdate.rendezo = (rendezo === '' || rendezo === null) ? null : rendezo;
+        if (szereplok !== undefined) fieldsToUpdate.szereplok = (szereplok === '' || szereplok === null) ? null : szereplok;
         if (ertekeles !== undefined) fieldsToUpdate.ertekeles = (ertekeles === '' || ertekeles === null) ? null : Number(ertekeles);
         if (velemeny !== undefined) fieldsToUpdate.velemeny = (velemeny === '' || velemeny === null) ? null : velemeny;
         if (megnezve !== undefined) fieldsToUpdate.megnezve = (megnezve === '' || megnezve === null) ? null : megnezve;
