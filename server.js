@@ -56,8 +56,6 @@ app.use(cookieParser());
 
 // Autentikációs Middleware
 const authenticateToken = (req, res, next) => {
-    // const authHeader = req.headers.authorization;
-    // const token = authHeader && authHeader.split(' ')[1]; // Formátum: Bearer TOKEN
     const token = req.cookies.authToken; // Token olvasása a cookie-ból
     if (token == null) {
         return res.status(401).json({ message: 'Hiányzó autentikációs token.' });
@@ -129,8 +127,7 @@ app.post('/api/users/login', async (req, res) => {
 
         res.status(200).json({
             message: 'Sikeres bejelentkezés.',
-            // A tokent már nem küldjük a JSON body-ban, ha sütit használunk
-            // token: token, 
+            // A tokent nem küldjük a JSON body-ban, ha sütit használunk
             user: {
                 id: user.id,
                 username: user.username
@@ -158,7 +155,7 @@ function validateMovieData(data, isNewMovie = false) {
     const { cim, ev, ertekeles, megnezve } = data;
 
     // Cim validáció (csak új filmeknél kötelező)
-    if (isNewMovie && !cim) { // Ellenőrzi undefined, null, üres string stb.
+    if (isNewMovie && !cim) { 
         return { status: 400, message: 'A film címe kötelező.' };
     }
 
@@ -179,7 +176,8 @@ function validateMovieData(data, isNewMovie = false) {
     }
 
     // Megnezve validáció
-    // Ha a megnezve meg van adva (nem undefined, nem null, nem üres string), akkor érvényes YYYY-MM-DD dátumnak kell lennie.
+    // Ha a megnezve meg van adva (nem undefined, nem null, nem üres string), 
+    // akkor érvényes YYYY-MM-DD dátumnak kell lennie.
     if (megnezve !== undefined && megnezve !== null && megnezve !== '') {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(megnezve)) {
             return { status: 400, message: 'A megnézés dátuma érvénytelen formátumú (YYYY-MM-DD).' };
@@ -217,9 +215,9 @@ app.post('/api/movies', authenticateToken, (req, res) => {
         const result = stmt.run(
             userId,
             cim,
-            ev || null,
+            Number(ev) || null,
             szereplok || null,
-            ertekeles || null,
+            Number(ertekeles) || null,
             velemeny || null,
             (megnezve === '' || megnezve === undefined) ? null : megnezve,
             hol || null
@@ -314,7 +312,7 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
         const updatedMovie = db.prepare('SELECT * FROM filmek WHERE id = ?').get(movieId);
         res.status(200).json(updatedMovie);
     } catch (error) {
-        console.error("Hiba film frissítésekor:", error);
+        console.error("Hiba a film frissítésekor:", error);
         res.status(500).json({ message: 'Szerverhiba történt a film frissítésekor.' });
     }
 });

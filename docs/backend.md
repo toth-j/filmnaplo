@@ -1,96 +1,389 @@
-**Magyarázat a `server.js` fájlhoz:**
+# Filmnapló Backend API Dokumentáció
 
-1. **Importok és Konfiguráció:** Betölti a szükséges modulokat (`express`, `better-sqlite3`, `bcrypt`, `jsonwebtoken`, `dotenv`, `path`). Beállítja a portot, JWT titkos kulcsot és a bcrypt sózási erősségét.
-2. **Adatbázis Beállítása:**
-   * Létrehozza a kapcsolatot a `filmnaplo.db` SQLite adatbázisfájllal (ha nem létezik, létrehozza).
-   * A `createUserTable` függvény biztosítja, hogy a `users` tábla létezzen az adatbázisban a megfelelő oszlopokkal. Ez a függvény automatikusan lefut a szerver indításakor.
-   * A `findUserByUsername` egy segédfüggvény a felhasználók kereséséhez.
-3. **Middleware-ek:**
-   * `app.use(express.json());`: Engedélyezi a bejövő JSON adatok feldolgozását a request body-ban.
-   * `authenticateToken`: Ez a middleware felelős a JWT tokenek ellenőrzéséért. Bár a jelenlegi felhasználói végpontok (regisztráció, bejelentkezés) nem használják közvetlenül, a későbbi, védett (pl. filmekkel kapcsolatos) végpontokhoz elengedhetetlen lesz.
-4. **Útvonalak:**
-   * **`/api/users/register` (POST):**
-     * Fogadja a `username` és `password` adatokat.
-     * Ellenőrzi, hogy a mezők ki vannak-e töltve, és a jelszó megfelel-e az alapvető erősségi követelményeknek (itt egy egyszerű hosszellenőrzés van).
-     * Ellenőrzi, hogy a felhasználónév foglalt-e már.
-     * Hasheli a jelszót a `bcrypt` segítségével.
-     * Beilleszti az új felhasználót az adatbázisba.
-     * Sikeres regisztráció esetén 201-es státuszkóddal és üzenettel válaszol.
-   * **`/api/users/login` (POST):**
-     * Fogadja a `username` és `password` adatokat.
-     * Megkeresi a felhasználót az adatbázisban.
-     * Összehasonlítja a megadott jelszót a tárolt hashelt jelszóval a `bcrypt.compare` segítségével.
-     * Sikeres azonosítás esetén generál egy JWT tokent, amely tartalmazza a felhasználó azonosítóját és nevét, és beállít egy lejárati időt.
-     * Visszaküldi a tokent és néhány alapvető felhasználói adatot.
-   * **`/api/users/logout` (POST):**
-     * Ez a végpont jelenleg csak egy megerősítő üzenetet küld. A JWT alapú kijelentkezés főként kliensoldali feladat (a token törlése a böngésző tárolójából). Szerveroldalon bonyolultabb megoldások (pl. token tiltólista) is implementálhatók lennének, de ez egy egyszerűsített verzió.
-5. **Alapvető Hibakezelő:** Egy egyszerű middleware, ami elfogja az útvonal-kezelőkben keletkező hibákat, és 500-as státuszkóddal, valamint hibaüzenettel válaszol.
-6. **Szerver Indítása:** Elindítja az Express szervert a megadott porton.
-   
-   
+## 1. Bevezetés
 
-**Fontos megjegyzések:**
+Ez a dokumentum a Filmnapló alkalmazás backend API-jának részletes leírását tartalmazza. Az API lehetővé teszi a felhasználók regisztrációját, bejelentkezését, valamint a filmek hozzáadását, listázását, módosítását és törlését.
 
-* **Adatbázis állapota:** A regisztrációs tesztek (különösen az 5. teszt, ami a már létező felhasználónevet ellenőrzi) függnek az adatbázis aktuális állapotától. Ha többször futtatod a teszteket, előfordulhat, hogy a "testuser_reg" felhasználó már létezik. Ilyenkor vagy törölnöd kell a `filmnaplo.db` fájlt (a szerver újraindításakor új, üres adatbázis jön létre), vagy minden tesztfuttatás előtt egyedi felhasználóneveket kell használnod.
+## 2. Általános információk
 
-* **Port:** Győződj meg róla, hogy a `@port = 3001` sorban a helyes portszám szerepel, amin a Node.js szervered fut (az `.env` fájlod alapján).
+### 2.1. Alap URL
 
-* **Token mentése (haladó):** A REST Client lehetővé teszi a válaszból származó adatok (pl. a JWT token) elmentését és későbbi kérésekben való felhasználását. Például a sikeres bejelentkezés után így menthetnéd el a tokent:
-  unfold_lesshttp
-  content_copyadd
-  `### Sikeres bejelentkezés és token mentése # @name loginRequest POST {{host}}/api/users/login Content-Type: {{contentType}}  {     "username": "testuser_reg",     "password": "password123" }  @token = {{loginRequest.response.body.token}}  ### Védett végpont tesztelése a mentett tokennel (későbbiekben) GET {{host}}/api/some-protected-route Authorization: Bearer {{token}}`
-  Ez akkor lesz hasznos, amikor a filmek kezeléséhez szükséges védett végpontokat implementálod. 
+Az API végpontok az alábbi alap URL-ről érhetők el:
+`http://localhost:PORT/api`
+A `PORT` értéke a `.env` fájlban vagy a környezeti változókban definiált portszám (alapértelmezetten 3000).
 
-Mindegyik alábbi végpont előtt lefut az `authenticateToken` middleware, ami biztosítja, hogy csak bejelentkezett felhasználók férhessenek hozzájuk, és a műveletek mindig az adott bejelentkezett felhasználóhoz kötődnek.
+### 2.2. Környezeti változók
 
-1. **`POST /api/movies`**:
-   
-   * **Cél**: Új filmbejegyzés hozzáadása az adatbázishoz.
-   * **Működés**: A kérés törzsében (`req.body`) várja a film adatait (cím, év, szereplők, értékelés stb.). A bejelentkezett felhasználó azonosítóját (`req.user.userId`) felhasználva menti el az új filmet az `movies` (a kódban `filmek`) táblába.
-   * **Válasz**: Sikeres létrehozás esetén `201` státuszkóddal és az újonnan létrehozott film adataival tér vissza. Hiba esetén megfelelő státuszkódot és hibaüzenetet küld.
+Az alkalmazás megfelelő működéséhez az alábbi környezeti változókat kell beállítani egy `.env` fájlban a projekt gyökérkönyvtárában:
 
-2. **`GET /api/movies`**:
-   
-   * **Cél**: A bejelentkezett felhasználó összes filmbejegyzésének listázása.
-   * **Működés**: Lekérdezi az `movies` (a kódban `filmek`) táblából azokat a filmeket, amelyek a bejelentkezett felhasználóhoz (`req.user.userId`) tartoznak. A filmeket a létrehozás ideje (`letrehozva`) szerint csökkenő sorrendben adja vissza.
-   * **Válasz**: `200` státuszkóddal és a felhasználó filmjeinek listájával (JSON tömb) tér vissza.
+* `PORT`: Az alkalmazás portszáma (pl. `3000`).
+* `JWT_SECRET`: Egy titkos kulcs a JSON Web Tokenek (JWT) aláírásához és ellenőrzéséhez. Ennek hiányában az alkalmazás nem indul el.
 
-3. **`GET /api/movies/:id`**:
-   
-   * **Cél**: Egy konkrét filmbejegyzés adatainak lekérése azonosító alapján.
-   * **Működés**: Az URL-ben (`req.params.id`) kapott azonosító alapján megkeresi a filmet az `movies` (a kódban `filmek`) táblában. Csak akkor adja vissza a filmet, ha az létezik ÉS a bejelentkezett felhasználóhoz (`req.user.userId`) tartozik.
-   * **Válasz**: Sikeres találat esetén `200` státuszkóddal és a film adataival tér vissza. Ha a film nem található, vagy a felhasználónak nincs jogosultsága megtekinteni, `404` státuszkódot küld. Érvénytelen azonosító esetén `400`-at.
+Példa `.env` fájl:
 
-4. **`PUT /api/movies/:id`**:
-   
-   * **Cél**: Egy meglévő filmbejegyzés adatainak módosítása.
-   * **Működés**: Az URL-ben (`req.params.id`) kapott azonosító alapján azonosítja a módosítandó filmet. A kérés törzsében (`req.body`) várja a frissítendő adatokat. Csak azokat a mezőket frissíti, amelyek a kérésben szerepelnek. Ellenőrzi, hogy a film a bejelentkezett felhasználóhoz (`req.user.userId`) tartozik-e. A `frissitve` mezőt automatikusan beállítja az aktuális időpontra.
-   * **Válasz**: Sikeres módosítás esetén `200` státuszkóddal és a frissített film adataival tér vissza. Ha a film nem található, vagy a felhasználónak nincs jogosultsága módosítani, `404`-et küld. Érvénytelen adatok vagy azonosító esetén `400`-at.
+```
+PORT=3000
+JWT_SECRET=nagyonTitkosKulcs123!
+```
 
-5. **`DELETE /api/movies/:id`**:
-   
-   * **Cél**: Egy filmbejegyzés törlése azonosító alapján.
-   * **Működés**: Az URL-ben (`req.params.id`) kapott azonosító alapján törli a filmet az `movies` (a kódban `filmek`) táblából. Csak akkor hajtja végre a törlést, ha a film létezik ÉS a bejelentkezett felhasználóhoz (`req.user.userId`) tartozik.
-   * **Válasz**: Sikeres törlés esetén `204` ("No Content") státuszkóddal tér vissza (nincs válasz törzs). Ha a film nem található, vagy a felhasználónak nincs jogosultsága törölni, `404`-et küld. Érvénytelen azonosító esetén `400`-at.
+### 2.3. Autentikáció
 
-Ezek a végpontok alkotják a filmekkel kapcsolatos CRUD (Create, Read, Update, Delete) műveletek alapját a backend oldalon.
+Az API legtöbb végpontja autentikációt igényel. Az autentikáció JSON Web Token (JWT) alapú, amit a sikeres bejelentkezés után a szerver egy `authToken` nevű HTTP-only cookie-ban tárol el.
 
+* **Token lejárata**: 3 óra.
+* **Cookie beállítások**:
+  * `httpOnly: true`: A cookie JavaScriptből nem érhető el, ami védelmet nyújt XSS támadások ellen.
+  * `secure: process.env.NODE_ENV === 'production'`: Éles környezetben a cookie csak HTTPS kapcsolaton keresztül kerül továbbításra.
+  * `sameSite: 'Lax'`: CSRF védelem.
+  * `maxAge`: A cookie élettartama összhangban van a token lejáratával (3 óra).
 
+Ha egy védett végpontot érvénytelen vagy hiányzó tokennel próbálnak elérni, a szerver `401 Unauthorized` vagy `403 Forbidden` státuszkóddal válaszol.
+
+### 2.4. Kérés formátuma
+
+Az API `application/json` formátumú kéréseket vár a `POST` és `PUT` metódusok esetén.
+
+### 2.5. Válasz formátuma
+
+A válaszok szintén `application/json` formátumúak. Sikeres művelet esetén általában `200 OK`, `201 Created` vagy `204 No Content` státuszkódot ad vissza. Hiba esetén a megfelelő HTTP státuszkódot (pl. `400`, `401`, `403`, `404`, `409`, `500`) és egy JSON objektumot ad vissza, ami tartalmaz egy `message` mezőt a hiba leírásával.
+
+Példa sikeres válaszra:
+
+```json
+{
+    "id": 1,
+    "cim": "A film címe"
+    // ... egyéb film adatok
+}
+```
+
+Példa hibakezelés válaszra:
+
+```json
+{
+    "message": "A film címe kötelező."
+}
+```
+
+### 2.6. Hibakezelés
+
+Az alkalmazás rendelkezik egy globális hibakezelővel, ami minden nem kezelt hibát elkap, naplózza a szerver konzoljára, és egy általános 500 Internal Server Error választ küld a kliensnek:
+
+```json
+{
+    "message": "Szerverhiba történt!"
+}
+```
+
+### 2.7. Middleware-ek
+
+* cors(): Engedélyezi a cross-origin kéréseket.
+* express.json(): Feldolgozza a JSON formátumú kéréstörzseket.
+* cookieParser(): Lehetővé teszi a cookie-k olvasását és írását.
+
+### 2.8. Adatbázis
+
+Az alkalmazás better-sqlite3 könyvtárat használ egy SQLite adatbázissal (filmnaplo.db). A táblák (felhasznalok, filmek) automatikusan létrejönnek az alkalmazás első indításakor, ha még nem léteznek. A filmek tábla user_id oszlopa külső kulcsként hivatkozik a felhasznalok tábla id oszlopára, ON DELETE CASCADE opcióval, ami azt jelenti, hogy ha egy felhasználó törlődik, az összes hozzá tartozó film is törlődik
+
+## 3. Adatmodellek
+
+### 3.1. Felhasználó (`felhasznalok`)
+
+| Mező       | Típus   | Leírás                                   | Megkötések                 |
+| ---------- | ------- | ---------------------------------------- | -------------------------- |
+| `id`       | INTEGER | Egyedi azonosító                         | PRIMARY KEY, AUTOINCREMENT |
+| `username` | TEXT    | Felhasználónév                           | UNIQUE, NOT NULL           |
+| `password` | TEXT    | Hash-elt jelszó (bcrypt, SALT_ROUNDS=10) | NOT NULL                   |
+
+### 3.2. Film (`filmek`)
+
+| Mező        | Típus   | Leírás                                             | Megkötések                                                |
+| ----------- | ------- | -------------------------------------------------- | --------------------------------------------------------- |
+| `id`        | INTEGER | Egyedi azonosító                                   | PRIMARY KEY, AUTOINCREMENT                                |
+| `user_id`   | INTEGER | A felhasználó azonosítója                          | NOT NULL, FOREIGN KEY (felhasznalok.id) ON DELETE CASCADE |
+| `cim`       | TEXT    | Film címe                                          | NOT NULL                                                  |
+| `ev`        | INTEGER | Megjelenési év                                     | Opcionális                                                |
+| `szereplok` | TEXT    | Szereplők listája (vesszővel elválasztva javasolt) | Opcionális                                                |
+| `ertekeles` | INTEGER | Értékelés (1-5)                                    | Opcionális                                                |
+| `velemeny`  | TEXT    | Felhasználói vélemény                              | Opcionális                                                |
+| `megnezve`  | DATE    | Megnézés dátuma ('YYYY-MM-DD' formátum)            | Opcionális (ha `NULL`, még nem nézte meg)                 |
+| `hol`       | TEXT    | Hol nézte meg (pl. Netflix, mozi)                  | Opcionális                                                |
+
+![alt text](images/db.png)
+
+## 4. Felhasználói végpontok (`/api/users`)
+
+### 4.1. Regisztráció
+
+* **Útvonal**: `POST /api/users/register`
+
+* **Leírás**: Új felhasználó regisztrálása.
+
+* **Autentikáció**: Nem szükséges.
+
+* **Kérés törzse**:
+  
+  ```json
+  {
+      "username": "string",
+      "password": "string"
+  }
+  ```
+
+* **Validáció**:
+  
+  * `username`: Kötelező.
+  * `password`: Kötelező, minimum 6 karakter hosszú.
+
+* **Sikeres válasz (201 Created)**:
+  
+  ```json
+  {
+      "message": "Sikeres regisztráció.",
+      "userId": "integer" // Az újonnan létrehozott felhasználó ID-ja
+  }
+  ```
+
+* **Hiba válaszok**:
+  
+  * `400 Bad Request`: `{"message": "Felhasználónév és jelszó megadása kötelező."}`
+  * `400 Bad Request`: `{"message": "A jelszónak legalább 6 karakter hosszúnak kell lennie."}`
+  * `409 Conflict`: `{"message": "A felhasználónév már foglalt."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba a regisztráció során."}`
+
+### 4.2. Bejelentkezés
+
+* **Útvonal**: `POST /api/users/login`
+
+* **Leírás**: Felhasználó bejelentkeztetése és autentikációs token generálása.
+
+* **Autentikáció**: Nem szükséges.
+
+* **Kérés törzse**:
+  
+  ```json
+  {
+      "username": "string",
+      "password": "string"
+  }
+  ```
+
+* **Validáció**:
+  
+  * `username`: Kötelező.
+  * `password`: Kötelező.
+
+* **Sikeres válasz (200 OK)**:
+  
+  * Beállítja az `authToken` HTTP-only cookie-t.
+    
+    ```json
+    {
+    "message": "Sikeres bejelentkezés.",
+    "user": {
+        "id": "integer",
+        "username": "string"
+    }
+    }
+    ```
+
+* **Hiba válaszok**:
+  
+  * `400 Bad Request`: `{"message": "Felhasználónév és jelszó megadása kötelező."}`
+  * `401 Unauthorized`: `{"message": "Hibás felhasználónév vagy jelszó."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba a bejelentkezés során."}`
+
+### 4.3. Kijelentkezés
+
+* **Útvonal**: `POST /api/users/logout`
+
+* **Leírás**: Felhasználó kijelentkeztetése az autentikációs token cookie törlésével.
+
+* **Autentikáció**: Nem szükséges (de a cookie-t törli, ha létezik).
+
+* **Kérés törzse**: Nincs.
+
+* **Sikeres válasz (200 OK)**:
+  
+  * Törli az `authToken` cookie-t.
+    
+    ```json
+    {
+    "message": "Sikeres kijelentkezés."
+    }
+    ```
+    
+## 5. Film végpontok (`/api/movies`)
+
+Minden filmekkel kapcsolatos végpont autentikációt igényel.
+
+### 5.1. Film adatok validálása (`validateMovieData` segédfüggvény)
+
+Ez a szerveroldali segédfüggvény a filmek hozzáadásakor és módosításakor ellenőrzi a beküldött adatokat.
+
+* `cim` (string):
+  * Új film hozzáadásakor (`isNewMovie = true`) kötelező.
+* `ertekeles` (number):
+  * Ha meg van adva (nem `undefined`, nem `null`), akkor 1 és 5 közötti egész számnak kell lennie.
+  * Hibaüzenet: `Az értékelésnek 1 és 5 közötti számnak kell lennie.`
+* `ev` (number):
+  * Ha meg van adva (nem `undefined`, nem `null`), akkor 1900 és (aktuális év + 10) közötti számnak kell lennie.
+  * Hibaüzenet: `Érvénytelen megjelenési év.`
+* `megnezve` (string):
+  * Ha meg van adva (nem `undefined`, nem `null`, és nem üres string), akkor érvényes `YYYY-MM-DD` formátumú dátumnak kell lennie (pl. nem "2023-02-30").
+  * Hibaüzenetek: `A megnézés dátuma érvénytelen formátumú (YYYY-MM-DD).` vagy `A megnézés dátuma érvénytelen (pl. február 30).`
+
+### 5.2. Új film hozzáadása
+
+* **Útvonal**: `POST /api/movies`
+
+* **Leírás**: Új film hozzáadása a bejelentkezett felhasználó gyűjteményéhez.
+
+* **Autentikáció**: Szükséges.
+
+* **Kérés törzse**:
+  
+  ```json
+  {
+      "cim": "string", // Kötelező
+      "ev": "integer | null",
+      "szereplok": "string | null",
+      "ertekeles": "integer | null", // 1-5
+      "velemeny": "string | null",
+      "megnezve": "string ('YYYY-MM-DD') | null",
+      "hol": "string | null"
+  }
+  ```
+
+* **Sikeres válasz (201 Created)**: A létrehozott film objektum.
+  
+  ```json
+  {
+      "id": "integer",
+      "user_id": "integer",
+      "cim": "string",
+      "ev": "integer | null",
+      "szereplok": "string | null",
+      "ertekeles": "integer | null",
+      "velemeny": "string | null",
+      "megnezve": "string ('YYYY-MM-DD') | null",
+      "hol": "string | null"
+  }
+  ```
+
+* **Hiba válaszok**:
+  
+  * `400 Bad Request`: Validációs hiba (lásd 5.1. szakasz).
+  * `401 Unauthorized`: `{"message": "Hiányzó autentikációs token."}`
+  * `403 Forbidden`: `{"message": "Érvénytelen vagy lejárt token."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba történt a film hozzáadásakor."}`
+
+### 5.3. Filmek listázása
+
+* **Útvonal**: `GET /api/movies`
+
+* **Leírás**: A bejelentkezett felhasználó összes filmjének listázása. A filmek a `megnezve` dátum szerint csökkenő sorrendben kerülnek visszaadásra.
+
+* **Autentikáció**: Szükséges.
+
+* **Kérés törzse**: Nincs.
+
+* **Sikeres válasz (200 OK)**: Film objektumok tömbje.
+  
+  ```json
+  [
+      { /* Film objektum 1 */ },
+      { /* Film objektum 2 */ }
+      // ...
+  ]
+  ```
+
+* **Hiba válaszok**:
+  
+  * `401 Unauthorized`: `{"message": "Hiányzó autentikációs token."}`
+  * `403 Forbidden`: `{"message": "Érvénytelen vagy lejárt token."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba történt a filmek listázásakor."}`
+
+### 5.4. Egy konkrét film lekérése
+
+* **Útvonal**: `GET /api/movies/:id`
+* **Leírás**: Egy konkrét film adatainak lekérése azonosító alapján, amennyiben az a bejelentkezett felhasználóhoz tartozik.
+* **Autentikáció**: Szükséges.
+* **Útvonal paraméter**: `id` (integer) - A film egyedi azonosítója.
+* **Kérés törzse**: Nincs.
+* **Sikeres válasz (200 OK)**: A kért film objektum.
+* **Hiba válaszok**:
+  * `400 Bad Request`: `{"message": "Érvénytelen film azonosító."}` (ha `:id` nem szám)
+  * `401 Unauthorized`: `{"message": "Hiányzó autentikációs token."}`
+  * `403 Forbidden`: `{"message": "Érvénytelen vagy lejárt token."}`
+  * `404 Not Found`: `{"message": "Film nem található vagy nincs jogosultságod megtekinteni."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba történt a film lekérésekor."}`
+
+### 5.5. Film adatainak módosítása
+
+* **Útvonal**: `PUT /api/movies/:id`
+
+* **Leírás**: Egy meglévő film adatainak módosítása. Csak a kérés törzsében megadott mezők frissülnek.
+
+* **Autentikáció**: Szükséges.
+
+* **Útvonal paraméter**: `id` (integer) - A módosítandó film egyedi azonosítója.
+
+* **Kérés törzse**: Opcionális mezők, melyek a film objektum bármely módosítható tulajdonságát tartalmazhatják (lásd 5.2. szakasz kérés törzse, de a `cim` itt nem kötelező).
+  
+  ```json
+  {
+      "cim": "string | null",
+      "ev": "integer | null",
+      // ... stb.
+  }
+  ```
+
+* **Sikeres válasz (200 OK)**: A frissített film objektum.
+
+* **Hiba válaszok**:
+  
+  * `400 Bad Request`: `{"message": "Érvénytelen film azonosító."}`
+  * `400 Bad Request`: Validációs hiba (lásd 5.1. szakasz).
+  * `401 Unauthorized`: `{"message": "Hiányzó autentikációs token."}`
+  * `403 Forbidden`: `{"message": "Érvénytelen vagy lejárt token."}`
+  * `404 Not Found`: `{"message": "Film nem található vagy nincs jogosultságod módosítani."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba történt a film frissítésekor."}`
+  * Ha a kérés törzse üres vagy nem tartalmaz frissítendő mezőt, a szerver `200 OK` státusszal és a film aktuális adataival válaszol.
+
+### 5.6. Film törlése
+
+* **Útvonal**: `DELETE /api/movies/:id`
+* **Leírás**: Egy film törlése azonosító alapján, amennyiben az a bejelentkezett felhasználóhoz tartozik.
+* **Autentikáció**: Szükséges.
+* **Útvonal paraméter**: `id` (integer) - A törlendő film egyedi azonosítója.
+* **Kérés törzse**: Nincs.
+* **Sikeres válasz (204 No Content)**: Nincs válasz törzs.
+* **Hiba válaszok**:
+  * `400 Bad Request`: `{"message": "Érvénytelen film azonosító."}`
+  * `401 Unauthorized`: `{"message": "Hiányzó autentikációs token."}`
+  * `403 Forbidden`: `{"message": "Érvénytelen vagy lejárt token."}`
+  * `404 Not Found`: `{"message": "A film nem található vagy nincs jogosultságod törölni."}`
+  * `500 Internal Server Error`: `{"message": "Szerverhiba történt a film törlésekor."}`
+
+## Manuális tesztelés
+
+Ha az adatbázis már tartalmaz megőrzendő adatokat, akkor az adatbázisfájlt a tesztek futtatása előtt célszerű átnevezni. A server.js induláskor létrehoz egy új, üres adatbázist. Később vissza lehet állítani az eredeti adatbázisfájlt.
+
+A felhasználókkal kapcsolatos végpontok tesztjei az ***api_teszt1.http*** fájlban találhatók.
+
+**Fontos!**
+
+A regisztrációs tesztek (különösen az 5. teszt, ami a már létező felhasználónevet ellenőrzi) függnek az adatbázis aktuális állapotától. Ha többször futtatjuk a teszteket, előfordulhat, hogy a "testuser_reg" felhasználó már létezik. Ilyenkor vagy törölni kell a `filmnaplo.db` fájlt (a szerver újraindításakor új, üres adatbázis jön létre), vagy minden tesztfuttatás előtt egyedi felhasználóneveket kell használni.
+
+A filmekkel kapcsolatos végpontok az ***api_teszt2.http*** fájlban találhatók.
 
 **Magyarázat a tesztfájlhoz:**
 
-* **Változók (`@host`, `@contentType`, stb.)**: Globális változók a kérések egyszerűsítésére.
-* **`{{$randomInt}}`**: Ez a REST Client kiterjesztés egy dinamikus változója, ami minden futtatáskor egyedi felhasználónevet generál, így a regisztrációs teszt többször is futtatható.
-* **`@authToken`**: Ezt a változót a bejelentkezési kérés (`loginTestUser`) válaszából dinamikusan töltjük fel a `>` utáni szkript blokk segítségével.
+* **Változók (`@host`, `@testUsername`, `@testPassword` )**: Globális változók a kérések egyszerűsítésére.
 * **`@createdMovieId`**: Ezt a változót az első sikeres film létrehozási kérés (`addMovieSuccess`) válaszából töltjük fel.
-* **`# @name requestName`**: Ez a sor elnevezi a kérést, így a REST Client kiterjesztésben külön-külön is futtathatók.
+* **`# @name requestName`**: Ez a sor elnevezi a kérést.
 * **Sorrend**:
   1. Először regisztrálunk egy teszt felhasználót.
-  2. Majd bejelentkezünk vele, hogy megszerezzük az `authToken`-t.
+  2. Majd bejelentkezünk vele, hogy megkapjuk cookie-ban az `authToken`-t.
   3. Ezután következnek a filmekkel kapcsolatos tesztek, amelyek már használják ezt a tokent és a létrehozott film ID-ját.
-* **Teszt esetek**:
-  * **Sikeres műveletek**: Ellenőrzik a végpontok helyes működését érvényes adatokkal és authentikációval.
-  * **Hibás adatok**: Tesztelik a validációt (pl. hiányzó cím, érvénytelen értékelés).
-  * **Authentikációs hibák**: Ellenőrzik, hogy a védett végpontok valóban visszautasítják-e a kéréseket érvényes token nélkül.
-  * **Nem található erőforrások**: Tesztelik a `404 Not Found` válaszokat (pl. nem létező film ID).
-* **Kliensoldali szkriptelés (`> {% ... %}`)**: A REST Client kiterjesztés lehetővé teszi JavaScript kód futtatását a válasz után, amit itt a token és az ID kinyerésére és globális változókba mentésére használunk.
