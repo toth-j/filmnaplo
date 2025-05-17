@@ -35,7 +35,7 @@ db.exec(`
         cim TEXT NOT NULL,
         ev INTEGER,
         szereplok TEXT,
-        ertekeles INTEGER CHECK(ertekeles IS NULL OR (ertekeles >= 1 AND ertekeles <= 5)),
+        ertekeles INTEGER,
         velemeny TEXT,
         megnezve DATE, -- Ha NULL, akkor még nem néztük meg
         hol TEXT,
@@ -229,9 +229,6 @@ app.post('/api/movies', authenticateToken, (req, res) => {
         res.status(201).json(newMovie);
     } catch (error) {
         console.error("Hiba film hozzáadásakor:", error);
-        if (error.message.includes("CHECK constraint failed")) { // CHECK hiba
-            return res.status(400).json({ message: 'Érvénytelen adat, pl. az értékelésnek 1 és 5 közötti számnak kell lennie.' });
-        }
         res.status(500).json({ message: 'Szerverhiba történt a film hozzáadásakor.' });
     }
 });
@@ -318,9 +315,6 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
         res.status(200).json(updatedMovie);
     } catch (error) {
         console.error("Hiba film frissítésekor:", error);
-        if (error.message.includes("CHECK constraint failed")) {
-            return res.status(400).json({ message: 'Érvénytelen adat, pl. az értékelésnek 1 és 5 közötti számnak kell lennie.' });
-        }
         res.status(500).json({ message: 'Szerverhiba történt a film frissítésekor.' });
     }
 });

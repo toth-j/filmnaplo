@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS filmek (
     felhasznalo_id INTEGER NOT NULL,
     cim TEXT NOT NULL,
     megjelenesi_ev INTEGER,
-    rendezo TEXT, 
+    szereplok TEXT, 
     ertekeles INTEGER CHECK(ertekeles IS NULL OR (ertekeles >= 1 AND ertekeles <= 5)),
     jegyzetek TEXT,
     megnezve TEXT, 
@@ -33,19 +33,19 @@ INSERT INTO felhasznalok (felhasznalonev, jelszo_hash) VALUES
 -- Tesztadatok a 'filmek' táblához
 
 -- TesztElek (felhasznalo_id = 1) filmjei
-INSERT INTO filmek (felhasznalo_id, cim, megjelenesi_ev, rendezo, ertekeles, jegyzetek, megnezve, hol) VALUES
+INSERT INTO filmek (felhasznalo_id, cim, megjelenesi_ev, szereplok, ertekeles, jegyzetek, megnezve, hol) VALUES
 (1, 'A Nagy Film', 2020, 'Rendező Gábor', 5, 'Nagyon tetszett, izgalmas volt!', '2025-01-15', 'Netflix'),
 (1, 'Második Kaland', 2022, 'Rendezőnő Nóra', 4, 'Jó volt, de az első jobb.', '2025-03-20', 'Max'),
 (1, 'Várva Várt Csoda', 2024, 'Ismeretlen Rendező', NULL, 'Sok jót hallottam róla.', NULL, NULL);
 
 -- ProbaPanna (felhasznalo_id = 2) filmjei
-INSERT INTO filmek (felhasznalo_id, cim, megjelenesi_ev, rendezo, ertekeles, jegyzetek, megnezve, hol) VALUES
+INSERT INTO filmek (felhasznalo_id, cim, megjelenesi_ev, szereplok, ertekeles, jegyzetek, megnezve, hol) VALUES
 (2, 'Régi Klasszikus', 1998, 'Mester Rendező', 5, 'Örök kedvenc!', '2024-11-05', 'Disney+'),
 (2, 'Új Sci-fi', 2023, NULL, NULL, 'Kíváncsi vagyok rá, jók a kritikák.', NULL, 'AppleTV'),
 (2, 'Dokumentumfilm a Természetről', 2021, 'Nagy Természetbarát', 5,'Lenyűgöző képek.', '2024-07-10', 'RTL+');
 
 -- MintaMarci (felhasznalo_id = 3) filmjei
-INSERT INTO filmek (felhasznalo_id, cim, megjelenesi_ev, rendezo, ertekeles, jegyzetek, megnezve, hol) VALUES
+INSERT INTO filmek (felhasznalo_id, cim, megjelenesi_ev, szereplok, ertekeles, jegyzetek, megnezve, hol) VALUES
 (3, 'Animációs Mese', 2019, 'Kreatív Stúdió', 4, 'Aranyos történet, gyerekeknek tökéletes.', '2023-02-10', 'SkyShowTime'),
 (3, 'Független Dráma', 2022, 'Fiatal Tehetség', NULL, 'Díjakat nyert, érdekel.', NULL);
 
