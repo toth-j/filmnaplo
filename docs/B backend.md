@@ -290,8 +290,8 @@ Ez a szerveroldali segédfüggvény a filmek hozzáadásakor és módosításako
             * `"true"`: Csak a megnézett filmek listázása.
             * `"false"`: Csak a még nem megnézett filmek listázása.
         * Ha nincs megadva, minden film listázódik (a státuszuktól függetlenül).
-    * `cim_search` (string): Keresés a film címében. Részleges egyezéseket is visszaad (az SQLite alapértelmezetten case-sensitive a LIKE operátornál, hacsak nincs külön PRAGMA beállítás). A backend `%` wildcards karaktereket használ a kereséshez.
-        * Példa: `?cim_search=matrix`
+    * `cim` (string): Keresés a film címében. Részleges egyezéseket is visszaad (az SQLite alapértelmezetten case-sensitive a LIKE operátornál, hacsak nincs külön PRAGMA beállítás). A backend `%` wildcards karaktereket használ a kereséshez.
+        * Példa: `?cim=matrix`
 
 * **Autentikáció**: Szükséges.
 
@@ -386,7 +386,7 @@ A felhasználókkal kapcsolatos végpontok tesztjei az ***api_teszt1.http*** fá
 
 A regisztrációs tesztek (különösen az 5. teszt, ami a már létező felhasználónevet ellenőrzi) függnek az adatbázis aktuális állapotától. Ha többször futtatjuk a teszteket, előfordulhat, hogy a "testuser_reg" felhasználó már létezik. Ilyenkor vagy törölni kell a `filmnaplo.db` fájlt (a szerver újraindításakor új, üres adatbázis jön létre), vagy minden tesztfuttatás előtt egyedi felhasználóneveket kell használni.
 
-A filmekkel kapcsolatos végpontok az ***api_teszt2.http*** fájlban találhatók.
+A filmekkel kapcsolatos végpontok az ***api_teszt2.http*** fájlban találhatók. Itt először létre kell hozni egy új teszt felhasználót, be kell léptetni, és utána lehet tesztelni a filmek kezelését.
 
 **Magyarázat a tesztfájlhoz:**
 
