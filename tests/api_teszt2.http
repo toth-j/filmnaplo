@@ -93,20 +93,98 @@ Content-Type: application/json
 # @name listMoviesSuccess
 GET {{host}}/api/movies
 
-### 9. Egy konkrét film lekérése (sikeres)
+### 9. További filmek hozzáadása a szűrési tesztekhez
+
+### 9.1 Film szűréshez (megnézett)
+# @name addWatchedFilterMovie
+POST {{host}}/api/movies
+Content-Type: application/json
+
+{
+    "cim": "Megnézett Szűrő Teszt Film",
+    "ev": 2024,
+    "szereplok": "Színész A, Színész B",
+    "ertekeles": 5,
+    "megnezve": "2024-01-15",
+    "hol": "Online"
+}
+
+### 9.2 Film szűréshez (még nem megnézett)
+# @name addUnwatchedFilterMovie
+POST {{host}}/api/movies
+Content-Type: application/json
+
+{
+    "cim": "Nem Megnézett Szűrő Teszt Film",
+    "ev": 2024,
+    "szereplok": "Színész C",
+    "ertekeles": 3,
+    "megnezve": null,
+    "hol": "Várólista"
+}
+
+### 9.3 Film szűréshez (kereshető cím, megnézett)
+# @name addSearchableWatchedMovie
+POST {{host}}/api/movies
+Content-Type: application/json
+
+{
+    "cim": "Egyedi Kulcsszó Film Megnézve",
+    "ev": 2022,
+    "megnezve": "2022-05-10"
+}
+
+### 9.4 Film szűréshez (kereshető cím, nem megnézett)
+# @name addSearchableUnwatchedMovie
+POST {{host}}/api/movies
+Content-Type: application/json
+
+{
+    "cim": "Másik Kulcsszó Film Nem Megnézve",
+    "ev": 2023,
+    "megnezve": null
+}
+
+
+### -------------------------------------
+### SZŰRÉSI TESZTEK
+### -------------------------------------
+
+### 10. Filmek listázása (szűrés: csak a megnézettek)
+# @name listMoviesFilteredWatched
+GET {{host}}/api/movies?megnezve=true
+
+### 11. Filmek listázása (szűrés: csak a nem megnézettek)
 # @name getMovieByIdSuccess
+GET {{host}}/api/movies?megnezve=false
+
+### 12. Filmek listázása (keresés címben: "Kulcsszó")
+# @name getMovieByIdNotFound
+GET {{host}}/api/movies?cim=Kulcsszó
+
+### 13. Filmek listázása (kombinált: megnézett ÉS címben "Egyedi")
+# @name getMovieByIdInvalidFormat
+GET {{host}}/api/movies?megnezve=true&cim=Egyedi
+
+### 14. Filmek listázása (kombinált: nem megnézett ÉS címben "Másik")
+# @name updateMovieSuccess
+GET {{host}}/api/movies?megnezve=false&cim=Másik
+
+
+### 15. Egy konkrét film lekérése (sikeres)
+# @name getSpecificMovieByIdSuccess
 GET {{host}}/api/movies/{{createdMovieId}}
 
-### 10. Egy konkrét film lekérése (hiba: nem létező ID)
-# @name getMovieByIdNotFound
+### 16. Egy konkrét film lekérése (hiba: nem létező ID)
+# @name getSpecificMovieByIdNotFound
 GET {{host}}/api/movies/999999
 
-### 11. Egy konkrét film lekérése (hiba: érvénytelen ID formátum)
-# @name getMovieByIdInvalidFormat
+### 17. Egy konkrét film lekérése (hiba: érvénytelen ID formátum)
+# @name getSpecificMovieByIdInvalidFormat
 GET {{host}}/api/movies/abc
 
-### 12. Film adatainak módosítása (sikeres)
-# @name updateMovieSuccess
+### 18. Film adatainak módosítása (sikeres)
+# @name updateSpecificMovieSuccess
 PUT {{host}}/api/movies/{{createdMovieId}}
 Content-Type: application/json
 
@@ -116,8 +194,8 @@ Content-Type: application/json
     "velemeny": "Ez egy frissített vélemény."
 }
 
-### 13. Film adatainak módosítása (hiba: érvénytelen értékelés)
-# @name updateMovieInvalidRating
+### 19. Film adatainak módosítása (hiba: érvénytelen értékelés)
+# @name updateSpecificMovieInvalidRating
 PUT {{host}}/api/movies/{{createdMovieId}}
 Content-Type: application/json
 
@@ -125,8 +203,8 @@ Content-Type: application/json
     "ertekeles": 0
 }
 
-### 14. Film adatainak módosítása (hiba: nem létező ID)
-# @name updateMovieNotFound
+### 20. Film adatainak módosítása (hiba: nem létező ID)
+# @name updateSpecificMovieNotFound
 PUT {{host}}/api/movies/999999
 Content-Type: application/json
 
@@ -134,15 +212,15 @@ Content-Type: application/json
     "cim": "Nem Létező Film Frissítése"
 }
 
-### 15. Film törlése (sikeres)
-# @name deleteMovieSuccess
+### 21. Film törlése (sikeres - az eredetileg létrehozott teszt film)
+# @name deleteSpecificMovieSuccess
 DELETE {{host}}/api/movies/{{createdMovieId}}
 
-### 16. Film törlése (hiba: nem létező ID, mert már töröltük)
-# @name deleteMovieNotFound
+### 22. Film törlése (hiba: nem létező ID, mert már töröltük)
+# @name deleteSpecificMovieNotFound
 DELETE {{host}}/api/movies/{{createdMovieId}}
 
-### 17. Kijelentkezés (sikeres)
+### 23. Kijelentkezés (sikeres)
 # @name logoutSuccess
 # Ez a kérés törli a HTTP-Only cookie-t a szerver oldalon.
 # A kliens (pl. VS Code REST Client) ezután már nem küldi el a cookie-t.

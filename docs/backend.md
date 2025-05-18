@@ -282,13 +282,23 @@ Ez a szerveroldali segédfüggvény a filmek hozzáadásakor és módosításako
 
 * **Útvonal**: `GET /api/movies`
 
-* **Leírás**: A bejelentkezett felhasználó összes filmjének listázása. A filmek a `megnezve` dátum szerint csökkenő sorrendben kerülnek visszaadásra.
+* **Leírás**: A bejelentkezett felhasználó összes filmjének listázása, szűrési és keresési lehetőséggel. A filmek a bevitel sorrendje szerint csökkenően (utoljára bevitt elöl) vannak rendezve.
+
+* **Query Paraméterek (opcionális)**:
+    * `megnezve` (string): Szűrés a film megnézett státusza alapján.
+        * Lehetséges értékek:
+            * `"true"`: Csak a megnézett filmek listázása.
+            * `"false"`: Csak a még nem megnézett filmek listázása.
+        * Ha nincs megadva, minden film listázódik (a státuszuktól függetlenül).
+    * `cim_search` (string): Keresés a film címében. Részleges egyezéseket is visszaad (az SQLite alapértelmezetten case-sensitive a LIKE operátornál, hacsak nincs külön PRAGMA beállítás). A backend `%` wildcards karaktereket használ a kereséshez.
+        * Példa: `?cim_search=matrix`
 
 * **Autentikáció**: Szükséges.
 
 * **Kérés törzse**: Nincs.
 
 * **Sikeres válasz (200 OK)**: Film objektumok tömbje.
+    * Ha a szűrési feltételeknek egyetlen film sem felel meg, üres tömb (`[]`) a válasz.
   
   ```json
   [

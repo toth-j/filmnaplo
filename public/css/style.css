@@ -1,0 +1,28 @@
+/* public/css/style.css */
+body {
+    padding-top: 70px;
+    /* Adjust if navbar height changes */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: url(../hatter.jpg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    /* Optional: Add a fallback background color */
+    background-color: #797979;
+}
+
+.movie-card {
+    margin-bottom: 20px;
+}
+
+.movie-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.movie-card .mt-auto {
+    margin-top: auto;
+}
+
+/* Add more custom styles as needed */

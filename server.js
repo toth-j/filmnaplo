@@ -53,6 +53,7 @@ function findUserByUsername(username) {
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Autentikációs Middleware
 const authenticateToken = (req, res, next) => {
@@ -234,12 +235,32 @@ app.post('/api/movies', authenticateToken, (req, res) => {
 // GET /api/movies: Bejelentkezett felhasználó filmjeinek listázása
 app.get('/api/movies', authenticateToken, (req, res) => {
     const userId = req.user.userId;
-    let query = 'SELECT * FROM filmek WHERE user_id = ?';
-    query += ' ORDER BY date(megnezve) DESC'; // Biztosítjuk, hogy dátumként értelmezze
+    const { megnezve, cim } = req.query;
+
+    let sql = 'SELECT * FROM filmek WHERE user_id = ?';
+    const queryParams = [userId];
+    if (megnezve !== undefined) {
+        if (megnezve === 'true') {
+            // Ha 'true', akkor a megnezve mező NE legyen NULL
+            // A 'megnezve' oszlop DATE típusú, a '' (üres string) nem releváns itt,
+            // a NULL jelzi, ha nincs megadva dátum.
+            sql += ' AND megnezve IS NOT NULL';
+        } else if (megnezve === 'false') {
+            // Ha 'false', akkor a megnezve mező legyen NULL
+            sql += ' AND megnezve IS NULL';
+        }
+    }
+
+    if (cim) {
+        sql += ' AND cim LIKE ?';
+        queryParams.push(`%${cim}%`); // LIKE kereséshez wildcards
+    }
+
+    sql += ' ORDER BY id DESC';
 
     try {
-        const stmt = db.prepare(query);
-        const movies = stmt.all(userId);
+        const stmt = db.prepare(sql);
+        const movies = stmt.all(...queryParams);
         res.status(200).json(movies);
     } catch (error) {
         console.error("Hiba filmek listázásakor:", error);
