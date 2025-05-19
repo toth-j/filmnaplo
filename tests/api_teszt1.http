@@ -7,7 +7,8 @@
 
 ###
 # 1. Új felhasználó regisztrációja
-# Sikeres válasz: 201 Created
+# Sikeres válasz: 201 
+# vagy 409, ha már létrehoztuk a felhasználót
 POST {{host}}/api/users/register
 Content-Type: application/json
 

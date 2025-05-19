@@ -170,7 +170,6 @@ GET {{host}}/api/movies?megnezve=true&cim=Egyedi
 # @name updateMovieSuccess
 GET {{host}}/api/movies?megnezve=false&cim=Másik
 
-
 ### 15. Egy konkrét film lekérése (sikeres)
 # @name getSpecificMovieByIdSuccess
 GET {{host}}/api/movies/{{createdMovieId}}

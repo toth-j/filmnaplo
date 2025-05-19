@@ -305,31 +305,63 @@ app.put('/api/movies/:id', authenticateToken, (req, res) => {
     }
 
     try {
-        const checkStmt = db.prepare('SELECT id FROM filmek WHERE id = ? AND user_id = ?');
-        if (!checkStmt.get(movieId, userId)) {
+        // 1. Film lekérése és jogosultság ellenőrzése
+        const getMovieStmt = db.prepare('SELECT * FROM filmek WHERE id = ? AND user_id = ?');
+        let existingMovie = getMovieStmt.get(movieId, userId);
+
+        if (!existingMovie) {
             return res.status(404).json({ message: 'Film nem található vagy nincs jogosultságod módosítani.' });
         }
 
-        const fieldsToUpdate = {};
-        if (cim !== undefined) fieldsToUpdate.cim = cim;
-        if (ev !== undefined) fieldsToUpdate.ev = (ev === '' || ev === null) ? null : Number(ev);
-        if (szereplok !== undefined) fieldsToUpdate.szereplok = (szereplok === '' || szereplok === null) ? null : szereplok;
-        if (ertekeles !== undefined) fieldsToUpdate.ertekeles = (ertekeles === '' || ertekeles === null) ? null : Number(ertekeles);
-        if (velemeny !== undefined) fieldsToUpdate.velemeny = (velemeny === '' || velemeny === null) ? null : velemeny;
-        if (megnezve !== undefined) fieldsToUpdate.megnezve = (megnezve === '' || megnezve === null) ? null : megnezve;
-        if (hol !== undefined) fieldsToUpdate.hol = (hol === '' || hol === null) ? null : hol;
+        // 2. Új, potenciális értékek előkészítése a kérés alapján
+        // Ha egy mező nincs a kérésben (undefined), akkor a meglévő értéket használjuk.
+        // Az üres stringeket és null-t NULL-ként kezeljük az adatbázis számára.
+        const newPotentialValues = {
+            cim: cim !== undefined ? cim : existingMovie.cim,
+            ev: ev !== undefined ? (ev === '' || ev === null ? null : Number(ev)) : existingMovie.ev,
+            szereplok: szereplok !== undefined ? (szereplok === '' || szereplok === null ? null : szereplok) : existingMovie.szereplok,
+            ertekeles: ertekeles !== undefined ? (ertekeles === '' || ertekeles === null ? null : Number(ertekeles)) : existingMovie.ertekeles,
+            velemeny: velemeny !== undefined ? (velemeny === '' || velemeny === null ? null : velemeny) : existingMovie.velemeny,
+            megnezve: megnezve !== undefined ? (megnezve === '' || megnezve === null ? null : megnezve) : existingMovie.megnezve,
+            hol: hol !== undefined ? (hol === '' || hol === null ? null : hol) : existingMovie.hol,
+        };
 
-        if (Object.keys(fieldsToUpdate).length === 0) {
-            const currentMovie = db.prepare('SELECT * FROM filmek WHERE id = ?').get(movieId);
-            return res.status(200).json(currentMovie); // Nincs mit frissíteni
+        // 3. Változások ellenőrzése: összehasonlítjuk az új értékeket a régiekkel
+        let hasChanges = false;
+        if (newPotentialValues.cim !== existingMovie.cim ||
+            newPotentialValues.ev !== existingMovie.ev ||
+            newPotentialValues.szereplok !== existingMovie.szereplok ||
+            newPotentialValues.ertekeles !== existingMovie.ertekeles ||
+            newPotentialValues.velemeny !== existingMovie.velemeny ||
+            newPotentialValues.megnezve !== existingMovie.megnezve ||
+            newPotentialValues.hol !== existingMovie.hol) {
+            hasChanges = true;
         }
 
-        const setClauses = Object.keys(fieldsToUpdate).map(key => `${key} = ?`).join(', ');
-        const values = [...Object.values(fieldsToUpdate), movieId, userId];
+        if (!hasChanges) {
+            // Ha nem volt tényleges változás, visszaadjuk a meglévő filmet (nem kell újra lekérdezni)
+            return res.status(200).json(existingMovie);
+        }
 
-        const updateStmt = db.prepare(`UPDATE filmek SET ${setClauses} WHERE id = ? AND user_id = ?`);
-        updateStmt.run(...values);
+        // 4. Adatbázis frissítése a fix SQL UPDATE paranccsal, az összes mezővel
+        const updateStmt = db.prepare(`
+            UPDATE filmek
+            SET cim = ?, ev = ?, szereplok = ?, ertekeles = ?, velemeny = ?, megnezve = ?, hol = ?
+            WHERE id = ? AND user_id = ?
+        `);
+        updateStmt.run(
+            newPotentialValues.cim,
+            newPotentialValues.ev,
+            newPotentialValues.szereplok,
+            newPotentialValues.ertekeles,
+            newPotentialValues.velemeny,
+            newPotentialValues.megnezve,
+            newPotentialValues.hol,
+            movieId,
+            userId
+        );
 
+        // 5. Frissített filmadatok lekérése és visszaküldése
         const updatedMovie = db.prepare('SELECT * FROM filmek WHERE id = ?').get(movieId);
         res.status(200).json(updatedMovie);
     } catch (error) {
