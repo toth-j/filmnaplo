@@ -30,10 +30,12 @@ Az alkalmazásnak reszponzívnak kell lennie (legalább mobil és asztali nézet
 1. Klónozd a projekt repository-t.
 2. Navigálj a projekt gyökérkönyvtárába.
 3. Hozz létre egy `.env` fájlt a gyökérkönyvtárban a következő tartalommal (a `JWT_SECRET` értékét cseréld le egy erős, véletlenszerű stringre):
+
     ```
     PORT=3000
     JWT_SECRET=nagyonTitkosKulcsodLeszItt123!
     ```
+
 4. Telepítsd a függőségeket: `npm install`
 
 ### Indítás
