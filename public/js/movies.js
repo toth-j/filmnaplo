@@ -177,7 +177,8 @@ async function loadMovieDataForEdit() {
                 form.megnezve.value = movie.megnezve || ''; // Format YYYY-MM-DD
                 form.hol.value = movie.hol || '';
                 form.style.display = 'block';
-                form.addEventListener('submit', handleAddOrEditMovie); 
+                form.addEventListener('submit', handleAddOrEditMovie);
+                form.cim.focus()
             }
         } else {
             alert(movie.message || `Hiba a film adatainak betöltésekor: ${response.status}`);
