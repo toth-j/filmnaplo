@@ -156,7 +156,6 @@ async function loadMovieDataForEdit() {
     if (loadingIndicator) loadingIndicator.style.display = 'block';
     if (form) form.style.display = 'none';
 
-
     try {
         const response = await fetch(`${API_BASE_URL}/movies/${movieId}`);
         if (response.status === 401) {
