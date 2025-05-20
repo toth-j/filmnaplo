@@ -141,3 +141,5 @@ A részletes manuális tesztelési esetek és a tesztelési folyamat leírása a
 * A tesztek futtatása előtt győződj meg róla, hogy a szerver fut.
 * A regisztrációs tesztek és a már létező felhasználónevet ellenőrző tesztek függnek az adatbázis aktuális állapotától. Szükség esetén a `filmnaplo.db` fájl törölhető (a szerver újraindításakor új, üres adatbázist hoz létre), vagy egyedi felhasználóneveket kell használni a tesztek során.
 * Ha az adatbázis már tartalmaz megőrzendő adatokat, akkor az adatbázisfájlt a tesztek futtatása előtt célszerű átnevezni.
+
+A tesztek futtatását a `tests/test_execution_log.xlsx` fájlban dokumentáljuk.

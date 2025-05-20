@@ -206,6 +206,8 @@ A kliensoldali funkciók manuális tesztelése a böngészőben történik a kü
 
 A tesztesetek a `tests` mappában a `manual_e2e_tests.md` fájlban találhatók.
 
+A tesztek futtatását a `tests/test_execution_log.xlsx` fájlban dokumentáljuk.
+
 ## 11. Jövőbeli fejlesztési lehetőségek
 
 * Kiterjesztett szűrési és rendezési opciók (pl. értékelés, év szerint).
