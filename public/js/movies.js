@@ -134,8 +134,6 @@ async function handleAddOrEditMovie(event) {
         const data = await response.json(); // Csak akkor próbáljuk olvasni, ha nem 401
 
         if (response.ok) {
-            alert(`Film sikeresen ${isEditMode ? 'módosítva' : 'hozzáadva'}!`);
-            form.reset();
             window.location.href = '/movies.html';
         } else {
             alert(data.message || `Hiba: ${response.statusText} (${response.status})`);
@@ -208,7 +206,6 @@ async function deleteMovie(movieId) {
             return;
         }
         if (response.ok) {
-            alert('Film sikeresen törölve!');
             loadMovies();
         } else {
             const data = await response.json().catch(() => ({ message: `Hiba: ${response.statusText} (${response.status})` }));
